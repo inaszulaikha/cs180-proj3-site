@@ -1,0 +1,355 @@
+<html>
+<head>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #ebebeb;
+      color: #324058;
+    }
+    h1, h2, h3 {
+      font-family: 'Poppins', serif;
+      color: #4a9fb7;
+      text-align: center;
+    }
+    .container {
+      margin: 0 auto;
+      padding: 60px 18%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    p, li {
+      line-height: 1.6;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+    figure {
+      text-align: center;
+      margin: 12px;
+    }
+    figcaption {
+      font-size: 14px;
+      color: #275673;
+      margin-top: 6px;
+    }
+    table {
+      border-collapse: collapse;
+      margin: 0 auto;
+    }
+    th, td {
+      padding: 8px;
+      vertical-align: top;
+    }
+    pre, code {
+      background: #d6dadf;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      overflow-x: auto;
+      display: block;
+    }
+    img.zoomable { cursor: zoom-in; }
+    #zoomModal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      background: rgba(18, 50, 62, 0.82);
+    }
+    #zoomModal.show { display: flex; }
+    #zoomModal img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.4);
+      background: #111;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <h1>CS180 Project 3 Part A: Image Warping and Mosaicing</h1>
+  <div style="text-align:center;">By Inas Zulaikha Anwar</div>
+
+  <div style="margin:20px 0; text-align:center;">
+    <img src="images/cover_mosaic.png" alt="Final Mosaic Result" style="max-width:75%;">
+  </div>
+
+  <h2>Overview</h2>
+  <p>
+    In this project, I implemented an image mosaicing pipeline.
+    The process involved shooting photos from the same center of projection, computing homographies to align them,
+    warping images using both nearest-neighbor and bilinear interpolation, and finally blending them into seamless mosaics.
+  </p>
+
+  <h2>A.1: Shoot and Digitize Pictures</h2>
+  <p>
+    I captured multiple image sets with overlapping fields of view by rotating the camera around a fixed center of projection.
+    This ensured projective transformations suitable for mosaic creation.
+  </p>
+  <h3>Set 1: Hearst Memorial Mining Building</h3>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:8px; justify-items:center; margin:20px 0;">
+    <img src="images/hmmb/2.jpeg" alt="hmmb 2">
+    <img src="images/hmmb/3.jpeg" alt="hmmb 3">
+    <img src="images/hmmb/4.jpeg" alt="hmmb 4">
+    <img src="images/hmmb/5.jpeg" alt="hmmb 5">
+    <img src="images/hmmb/6.jpeg" alt="hmmb 6">
+    <img src="images/hmmb/7.jpeg" alt="hmmb 7">
+    <img src="images/hmmb/8.jpeg" alt="hmmb 8">
+    <img src="images/hmmb/9.jpeg" alt="hmmb 9">
+    <img src="images/hmmb/10.jpeg" alt="hmmb 10">
+    <img src="images/hmmb/11.jpeg" alt="hmmb 11">
+    <img src="images/hmmb/12.jpeg" alt="hmmb 12">
+    <img src="images/hmmb/14.jpeg" alt="hmmb 14">
+    <img src="images/hmmb/16.jpeg" alt="hmmb 16">
+    <img src="images/hmmb/18.jpeg" alt="hmmb 18">
+    <img src="images/hmmb/20.jpeg" alt="hmmb 20">
+    <img src="images/hmmb/22.jpeg" alt="hmmb 22">
+  </div>
+  
+  <!-- stanley series -->
+  <h3>Set 2: Stanley Hall</h3>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:8px; justify-items:center; margin:20px 0;">
+    <img src="images/stanley/2.jpeg" alt="stanley 2">
+    <img src="images/stanley/3.jpeg" alt="stanley 3">
+    <img src="images/stanley/4.jpeg" alt="stanley 4">
+    <img src="images/stanley/5.jpeg" alt="stanley 5">
+    <img src="images/stanley/6.jpeg" alt="stanley 6">
+    <img src="images/stanley/7.jpeg" alt="stanley 7">
+    <img src="images/stanley/8.jpeg" alt="stanley 8">
+    <img src="images/stanley/9.jpeg" alt="stanley 9">
+    <img src="images/stanley/10.jpeg" alt="stanley 10">
+    <img src="images/stanley/11.jpeg" alt="stanley 11">
+    <img src="images/stanley/12.jpeg" alt="stanley 12">
+    <img src="images/stanley/13.jpeg" alt="stanley 13">
+    <img src="images/stanley/14.jpeg" alt="stanley 14">
+    <img src="images/stanley/15.jpeg" alt="stanley 15">
+  </div>
+
+  <h2>A.2: Recover Homographies</h2>
+  <p>
+    For homography recovery I manually picked <i>N</i> point pairs with
+    <i>ginput</i> on the two images, <i>im1_pts</i> to <i>im2_pts</i>.
+    From each correspondence <i>(xi, yi)</i> to <i>(xi, yi)</i>, I added two rows to a
+    design matrix <i>A</i>, with DLT constraints. In my code, I put the
+    (y′) row first and the (x′) row second:
+    </p>
+    
+    <code>
+    # v (y′) row
+    [ 0  0  0   -x1  -y1  -1    y2*x1   y2*y1   y2 ]
+    # u (x′) row
+    [ x1  y1  1    0    0   0   -x2*x1  -x2*y1  -x2]
+    </code>
+    
+    <p>
+    After stacking all pairs, I solve <i>A h = 0</i> with SVD
+    (<i>U, S, Vt = np.linalg.svd(A)</i>), take the last row of <i>Vt</i>,
+    reshape to <i>H</i>, and normalize so that <i>H[2,2] = 1</i>.
+    I also visualize the clicked correspondences by concatenating the two images
+    side-by-side and drawing lines between matched points.
+    </p>
+    
+<h3>
+  Visualized Correspondences:
+</h3>
+<figure>
+  <img src="images/a2_correspondence.png" alt="A2 correspondences">
+  <figcaption>Lines drawn from Image 1 to Image 2</figcaption>
+</figure>
+
+<h3>
+  System of equations for one match \((x,y)\to (u,v)\):
+</h3>
+  <pre><code>
+[-x -y -1  0  0  0  u x  u y  u]  ·  h = 0
+[ 0  0  0 -x -y -1  v x  v y  v]  ·  h = 0
+  </code></pre>
+
+<h3>
+  Recovered Homography Matrix (after SVD)
+</h3>
+<pre><code>[[ 1.65836595e+00 -4.19105771e-03 -1.59991304e+03]
+  [ 2.49401454e-01  1.42011820e+00 -6.34876480e+02]
+  [ 1.56979836e-04  1.36539039e-05  1.00000000e+00]]</code></pre>
+
+<p>
+  Below are the prints from my code: the <em>Ah = 0</em> design matrix \(A\) and the
+  first two rows corresponding to one correspondence pair.
+  </p>
+<h3>Code Print (click to expand):</h3>
+  <details open>
+    <summary><b>Ah=0 system with A shape: (12, 9)</b></summary>
+    <pre><code>[[ 0.00000000e+00  0.00000000e+00  0.00000000e+00 -1.64239622e+03
+    -1.51502580e+03 -1.00000000e+00  2.47491285e+06  2.28297944e+06
+     1.50689147e+03]
+   [ 1.64239622e+03  1.51502580e+03  1.00000000e+00  0.00000000e+00
+     0.00000000e+00  0.00000000e+00 -1.43279874e+06 -1.32168293e+06
+    -8.72383117e+02]
+   [ 0.00000000e+00  0.00000000e+00  0.00000000e+00 -1.90490069e+03
+    -1.52017294e+03 -1.00000000e+00  2.88956294e+06  2.30596557e+06
+     1.51691002e+03]
+   [ 1.90490069e+03  1.52017294e+03  1.00000000e+00  0.00000000e+00
+     0.00000000e+00  0.00000000e+00 -2.24387583e+06 -1.79068617e+06
+    -1.17794898e+03]
+   [ 0.00000000e+00  0.00000000e+00  0.00000000e+00 -1.97696074e+03
+    -2.37974640e+03 -1.00000000e+00  4.76163098e+06  5.73176489e+06
+     2.40856122e+03]
+   [ 1.97696074e+03  2.37974640e+03  1.00000000e+00  0.00000000e+00
+     0.00000000e+00  0.00000000e+00 -2.45749974e+06 -2.95819034e+06
+    -1.24306957e+03]
+   [ 0.00000000e+00  0.00000000e+00  0.00000000e+00 -2.58947117e+03
+    -2.38489354e+03 -1.00000000e+00  6.12015745e+06  5.63664279e+06
+     2.36347774e+03]
+   [ 2.58947117e+03  2.38489354e+03  1.00000000e+00  0.00000000e+00
+     0.00000000e+00  0.00000000e+00 -4.82734355e+06 -4.44596589e+06
+    -1.86421985e+03]
+   [ 0.00000000e+00  0.00000000e+00  0.00000000e+00 -2.70270839e+03
+    -1.28340421e+03 -1.00000000e+00  3.47698921e+06  1.65107808e+06
+     1.28648330e+03]
+   [ 2.70270839e+03  1.28340421e+03  1.00000000e+00  0.00000000e+00
+     0.00000000e+00  0.00000000e+00 -5.40398519e+06 -2.56612861e+06
+    -1.99947032e+03]
+   [ 0.00000000e+00  0.00000000e+00  0.00000000e+00 -2.84682849e+03
+    -1.05178262e+03 -1.00000000e+00  3.06345418e+06  1.13181664e+06
+     1.07609369e+03]
+   [ 2.84682849e+03  1.05178262e+03  1.00000000e+00  0.00000000e+00
+     0.00000000e+00  0.00000000e+00 -6.06292338e+06 -2.23999354e+06
+    -2.12971150e+03]]</code></pre>
+  </details>
+  
+
+
+  <h2>A.3: Warp the Images</h2>
+  <p>
+    To warp an image, I implemented inverse warping using the recovered homography matrix \(H\). 
+    I looped over every pixel in the output image, mapped it back into the input image using \(H^{-1}\), and sampled the corresponding color value.
+    </p>
+    
+    <p>
+    I implemented two interpolation methods:
+    </p>
+    
+    <ul>
+      <li><b>Nearest Neighbor:</b> Rounds the back-projected coordinates \((x, y)\) to the nearest integer pixel in the input image. 
+      This method is fast but produces blocky edges.</li>
+    
+      <li><b>Bilinear Interpolation:</b> Computes a weighted average of the four neighboring pixels that surround the fractional coordinates. 
+      This yields a smoother, more natural-looking result, but it takes longer to compute.</li>
+    </ul>
+    
+    <p>
+    To rectify the image, I clicked four points and mapped them to a rectangle so they would be parallel.
+    </p>
+
+  <h3>Rectification Results & Comparison</h3>
+  <figure>
+    <img src="images/a3_nn_1.png" alt="Rectified NN second example">
+    <figcaption>rectified using nearest neighbors</figcaption>
+  </figure>
+  
+  <figure>
+    <img src="images/a3_bilinear_1.png" alt="Rectified Bilinear second example">
+    <figcaption>rectified using bilinear interpolation</figcaption>
+  </figure>
+
+  <figure>
+    <img src="images/a3_nn.png" alt="Rectified NN first example">
+    <figcaption>rectified using nearest neighbors</figcaption>
+  </figure>
+  
+  <figure>
+    <img src="images/a3_bilinear.png" alt="Rectified Bilinear first example">
+    <figcaption>rectified using bilinear interpolation</figcaption>
+  </figure>
+  
+
+  <h2>A.4: Blend the Images into a Mosaic</h2>
+  <p>
+    I implemented a simple image registration and blending process using homographies.
+    After selecting correspondences between two overlapping images, I compute the homography <i>H</i> that maps points
+    from the right image onto the left image’s frame.
+    Then, I calculated the bounding box of the combined mosaic by transforming both images’ corners through <i>H</i>
+    and determining their minimum and maximum extents. A translation matrix <i>T</i> shifts the coordinate system so that
+    the final mosaic fits on a common canvas.
+    </p>
+    
+    <p>
+    The right image is inverse-warped using bilinear interpolation (from A.3), while the left image is directly copied
+    into the canvas. Overlapping regions are blended using a simple alpha weighting:
+    </p>
+    
+    <pre><code>I_out = W_L * I_L + W_R * I_R</code></pre>
+    
+    <p>
+    Here, <i>W_L</i> and <i>W_R</i> are normalized masks computed from the nonzero regions of each warped image.
+    This weighted averaging smooths the seam between images and reduces ghosting artifacts.
+    I also compared the results to a version without blending, where the right image only overwrites the left.
+    The blended mosaics appear slightly more seamless near overlapping regions. </p>
+
+  <h3>Mosaic 1</h3>
+  <table>
+    <tr>
+      <td><figure><img src="images/a4_mosaic_1_unblended.png" alt="Mosaic 1 unblended"><figcaption>before alpha blend</figcaption></figure></td>
+      <td><figure><img src="images/a4_mosaic_1.png" alt="Mosaic 1 blended"><figcaption>after alpha blend</figcaption></figure></td>
+    </tr>
+  </table>
+
+  <h3>Mosaic 2</h3>
+  <table>
+    <tr>
+      <td><figure><img src="images/a4_mosaic_2_unblended.png" alt="Mosaic 2 unblended"><figcaption>before alpha blend</figcaption></figure></td>
+      <td><figure><img src="images/a4_mosaic_2.png" alt="Mosaic 2 blended"><figcaption>after alpha blend</figcaption></figure></td>
+    </tr>
+  </table>
+
+  <h3>Mosaic 3</h3>
+  <table>
+    <tr>
+      <td><figure><img src="images/a4_mosaic_4_unblended.png" alt="Mosaic 3 unblended"><figcaption>before alpha blend</figcaption></figure></td>
+      <td><figure><img src="images/a4_mosaic_4.png" alt="Mosaic 3 blended"><figcaption>after alpha blend</figcaption></figure></td>
+    </tr>
+  </table>
+</div>
+
+<div id="zoomModal" aria-hidden="true">
+  <img alt="">
+</div>
+
+<script>
+  (function () {
+    const modal = document.getElementById('zoomModal');
+    const modalImg = modal.querySelector('img');
+
+    document.querySelectorAll('img:not([data-nozoom])').forEach(img => {
+      img.classList.add('zoomable');
+      img.addEventListener('click', () => {
+        modalImg.src = img.src;
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+      });
+    });
+
+    modal.addEventListener('click', () => {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      modalImg.src = '';
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal.classList.contains('show')) modal.click();
+    });
+  })();
+</script>
+</body>
+</html>
