@@ -106,10 +106,16 @@
 
   <h2>Overview</h2>
   <p>
-    In this project, I implemented an image mosaicing pipeline.
-    The process involved shooting photos from the same center of projection, computing homographies to align them,
+    In this project, I implemented an end-to-end mosaicing pipeline.
+    In Part A, the process involved shooting photos from the same center of projection, computing homographies to align them,
     warping images using both nearest-neighbor and bilinear interpolation, and finally blending them into seamless mosaics.
   </p>
+  <p>
+    In Part B, I automated the alignment by first detecting corners with the Harris operator and ANMS, then extracting
+    40x40 grayscale patches downsamples to 8x8 (bias/gain-normalized), matching features using SSD distances with the Lowe
+    ratio test, then estimating a robust homography with 4-point RANSAC.
+  </p>
+
 
   <h2>A.1: Shoot and Digitize Pictures</h2>
   <p>
