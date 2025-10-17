@@ -229,8 +229,6 @@
     -2.12971150e+03]]</code></pre>
   </details>
   
-
-
   <h2>A.3: Warp the Images</h2>
   <p>
     To warp an image, I implemented inverse warping using the recovered homography matrix \(H\). 
@@ -332,8 +330,130 @@
       <td><figure><img src="images/a4_mosaic_4.png" alt="Mosaic 3 blended"><figcaption>after alpha blend</figcaption></figure></td>
     </tr>
   </table>
+
+<h2 id="b1">B.1: Harris Corner Detection</h2>
+<p>
+  I ran the provided Harris detector (single scale, no sub-pixel refinement), then applied
+  Adaptive Non-Maximal Suppression (ANMS) as in Section&nbsp;3 of the paper to keep strong,
+  spatially well-spread corners. Below are the raw Harris corners and the ANMS result
+  overlaid on the image.
+</p>
+
+<p>
+  <b>Detected corners overlaid on the image, with and without ANMS:</b>
+</p>
+<table>
+  <tr>
+    <td>
+      <figure>
+        <img src="images/b1_harris_no_anms.png" alt="Harris corners without ANMS">
+        <figcaption>Harris corners (no ANMS)</figcaption>
+      </figure>
+    </td>
+    <td>
+      <figure>
+        <img src="images/b1_harris_anms.png" alt="Harris corners with ANMS">
+        <figcaption>Harris corners (with ANMS)</figcaption>
+      </figure>
+    </td>
+  </tr>
+</table>
+
+<h2 id="b2">B.2: Feature Descriptor Extraction</h2>
+<p>
+  For each ANMS keypoint, I took a <b>40×40</b> grayscale window centered at the point,
+  downsampled it to <b>8×8</b> by averaging non-overlapping 5×5 blocks, then
+  bias/gain-normalized (zero mean, unit std). This follows Section&nbsp;4 (axis-aligned MOPS;
+  no rotation invariance, no wavelets).
+</p>
+<p>
+  <b>Normalized 8x8 feature descriptors with their source windows:</b>
+</p>
+<figure>
+  <img src="images/b2_features.png" alt="40x40 windows and normalized 8x8 descriptors">
+</figure>
+
+<h2 id="b3">B.3: Feature Matching</h2>
+<p>
+  I matched descriptors using <b>L2/SSD</b> distances. For each descriptor in Image&nbsp;1
+  I found the nearest and second-nearest in Image&nbsp;2 and applied the <b>Lowe ratio</b>
+  test (best/second &lt; τ). Below is a side-by-side visualization of matches kept after the
+  ratio test.
+</p>
+<p>
+  <b>Matched features between image pairs:</b>
+</p>
+<figure>
+  <img src="images/b3_matches.png" alt="Matched features with lines between images">
+  <figcaption>Colored lines drawn between corresponding points.</figcaption>
+</figure>
+
+<h2 id="b4">B.4: RANSAC for Robust Homography</h2>
+<p>
+  I implemented 4-point RANSAC following the loop taught in class:
+  first, select four feature pairs at random. Second, compute exact homography with DLT. Then, count inliers using
+  one-sided reprojection error, keep the largest set of inliers, and finally recompute least squares \(H\) estimate on all inliers.
+</p>
+
+<p>The manual mosaics were a lot shakier and unstable due to human error, my clicked correspondences weren't accurate/off by a few pixels.
+  The small mistakes amplified in the homography, showing ghosting across the seams. RANSAC discards outliers automatically, so the automatic warps and steadier.
+</p>
+
+<h3>Manual vs. Automatic</h3>
+<table>
+  <tr>
+    <td>
+      <figure>
+        <img src="images/b4_comparison_1.png" alt="Manual vs Automatic mosaic 1">
+        <figcaption>Comparison 1: Manual</figcaption>
+      </figure>
+    </td>
+    <td>
+      <figure>
+        <img src="images/b4_auto_mosaic_5.png" alt="Manual vs Automatic mosaic 2">
+        <figcaption>Comparison 1: Automatic</figcaption>
+      </figure>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <figure>
+        <img src="images/b4_comparison_2.png" alt="Manual vs Automatic mosaic 1">
+        <figcaption>Comparison 2: Manual</figcaption>
+      </figure>
+    </td>
+    <td>
+      <figure>
+        <img src="images/b4_auto_mosaic_3.png" alt="Manual vs Automatic mosaic 2">
+        <figcaption>Comparison 2: Automatic</figcaption>
+      </figure>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <figure>
+        <img src="images/b4_comparison_3.png" alt="Manual vs Automatic mosaic 1">
+        <figcaption>Comparison 3: Manual</figcaption>
+      </figure>
+    </td>
+    <td>
+      <figure>
+        <img src="images/b4_auto_mosaic_4.png" alt="Manual vs Automatic mosaic 2">
+        <figcaption>Comparison 3: Automatic</figcaption>
+      </figure>
+    </td>
+  </tr>
+</table>
+
+
+
+<h3>More Automatic Mosaics</h3>
+<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:10px; margin:10px 0;">
+  <img src="images/b4_auto_mosaic_2.png" alt="Auto mosaic 2">
+  <img src="images/b4_auto_mosaic_6.png" alt="Auto mosaic 6">
 </div>
 
+</div>
 <div id="zoomModal" aria-hidden="true">
   <img alt="">
 </div>
@@ -362,5 +482,6 @@
     });
   })();
 </script>
+
 </body>
 </html>
