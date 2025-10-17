@@ -74,6 +74,24 @@
       box-shadow: 0 10px 30px rgba(0,0,0,.4);
       background: #111;
     }
+    .bubble-link {
+      display: inline-flex;            /* use flexbox */
+      align-items: center;             /* vertical center */
+      justify-content: center;         /* horizontal center */
+      text-align: center;              /* multi-line center */
+      padding: 8px 14px;
+      border: 2px solid #4a9fb7;
+      border-radius: 9999px;
+      color: #4a9fb7;
+      text-decoration: none;
+      background: #f5fbfd;
+    }
+
+    .bubble-link:hover {
+      background: #e7f4f8;
+      color: #2f7e93;
+      border-color: #2f7e93;
+    }
   </style>
 </head>
 
@@ -83,7 +101,7 @@
   <div style="text-align:center;">By Inas Zulaikha Anwar</div>
 
   <div style="margin:20px 0; text-align:center;">
-    <img src="images/cover_mosaic.png" alt="Final Mosaic Result" style="max-width:75%;">
+    <img src="images/0_cover.png" alt="Final Mosaic Result" style="max-width:75%;">
   </div>
 
   <h2>Overview</h2>
@@ -331,12 +349,17 @@
     </tr>
   </table>
 
+  <h2>Reference Paper for Part B</h2>
+  <a class="bubble-link"
+     href="https://cal-cs180.github.io/fa25/hw/proj3/Papers/MOPS.pdf"
+     target="_blank" rel="noopener noreferrer">
+    Brown, Szeliski & Winder (MOPS) paper
+  </a>
+
 <h2 id="b1">B.1: Harris Corner Detection</h2>
 <p>
-  I ran the provided Harris detector (single scale, no sub-pixel refinement), then applied
-  Adaptive Non-Maximal Suppression (ANMS) as in Section&nbsp;3 of the paper to keep strong,
-  spatially well-spread corners. Below are the raw Harris corners and the ANMS result
-  overlaid on the image.
+  I ran the provided Harris detector then applied
+  Adaptive Non-Maximal Suppression (ANMS) as in Section 3 of the paper.
 </p>
 
 <p>
@@ -363,8 +386,7 @@
 <p>
   For each ANMS keypoint, I took a <b>40×40</b> grayscale window centered at the point,
   downsampled it to <b>8×8</b> by averaging non-overlapping 5×5 blocks, then
-  bias/gain-normalized (zero mean, unit std). This follows Section&nbsp;4 (axis-aligned MOPS;
-  no rotation invariance, no wavelets).
+  bias/gain-normalized.
 </p>
 <p>
   <b>Normalized 8x8 feature descriptors with their source windows:</b>
@@ -377,8 +399,7 @@
 <p>
   I matched descriptors using <b>L2/SSD</b> distances. For each descriptor in Image&nbsp;1
   I found the nearest and second-nearest in Image&nbsp;2 and applied the <b>Lowe ratio</b>
-  test (best/second &lt; τ). Below is a side-by-side visualization of matches kept after the
-  ratio test.
+  test (best/second &lt; τ).
 </p>
 <p>
   <b>Matched features between image pairs:</b>
